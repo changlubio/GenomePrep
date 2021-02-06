@@ -14,7 +14,7 @@ import bz2
 from zipfile import ZipFile
 import tempfile
 
-from tools import get_handle, flip_genotype
+from utils.tools import get_handle, flip_genotype
 
 valid_call = set(['A', 'C', 'G', 'T', 'I', 'D', '_', '-','0'])
 
