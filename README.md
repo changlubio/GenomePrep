@@ -1,9 +1,9 @@
 # GenomePrep
 To preprocess, quality control and prepare consumer DTC genomes for research
-weblink: https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/ 
+Official website: https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/
 
 ## Incentive
-To facilitate you conducting genetic research with public participants.
+To facilitate you (and myself) conducting genetic research with public participants.
 
 ## Feature
 1. Developed based on over 7,000 open genetic data
