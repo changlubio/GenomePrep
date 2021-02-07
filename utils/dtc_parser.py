@@ -304,7 +304,7 @@ class DTCrecord(object):
         if self.chro == 'M':
             self.chro = 'MT'
         
-        if not self.rsid.startswith('rs'):
-            self.badsnp = True
+        # if not self.rsid.startswith('rs'):
+        #     self.badsnp = True
 
 
