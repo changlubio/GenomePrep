@@ -46,6 +46,8 @@ class DTCparser(object):
         self.reject = False
         self.reject_type = ''
         self.handle = handle
+
+        self.norsid = 0
         
         ## if not rejected, we determine the company and parser upon initialization
         try:
@@ -163,6 +165,9 @@ class DTCparser(object):
 
         record = DTCrecord(line, self.company)
 
+        if not record.goodrsid:
+            self.norsid += 1
+
         return record
 
 class DTCrecord(object):
@@ -178,6 +183,12 @@ class DTCrecord(object):
         # 
         self.check_badsnp()
         self.loci = ':'.join([self.chro, self.pos])
+    
+    @property
+    def goodrsid(self):
+        if self.rsid.startswith('rs'):
+            return True
+        return False
 
     def check_badsnp(self):
         if not self.chro in valid_chromo:
