@@ -1,5 +1,6 @@
 # data directories
 datadir/
+datadir
 tutorial/datadir/
 outputs/
 tutorial/outputs/

@@ -9,12 +9,8 @@ import re
 import time
 import logging
 import sys
-import gzip
-import bz2
-from zipfile import ZipFile
-import tempfile
 
-from utils.tools import get_handle, flip_genotype
+from utils.tools import flip_genotype, resolve_file_for_genome
 
 valid_call = set(['A', 'C', 'G', 'T', 'I', 'D', '_', '-','0'])
 
@@ -40,7 +36,7 @@ class DTCparser(object):
     VCF records can then be accessed as an iterator. 
     """
 
-    def __init__(self, filename):
+    def __init__(self, handle, filename=''):
         self.path = filename
         self.company = None
         self.build = 'GRCh37'
@@ -49,73 +45,14 @@ class DTCparser(object):
 
         self.reject = False
         self.reject_type = ''
-        self.handle = None
-
-        file_type = subprocess.check_output(["file",filename]).decode("utf-8").replace("\n","")
-        if "Zip archive" in file_type:
-            # extract files
-            tmpdir = tempfile.TemporaryDirectory()
-            try:
-                with ZipFile(filename, 'r') as zip_ref:
-                    zip_ref.extractall(tmpdir.name)
-                    namelist = zip_ref.namelist()
-            except:
-                namelist = ''
-                self.reject = True
-                self.reject_type = 'invalid'
-                
-            # go over the extracted files
-            if len(namelist) == 1:
-                # if only one file in the zip, reject if we cannot open
-                f = os.path.join(tmpdir.name, namelist[0])
-                file_type = subprocess.check_output(["file",f]).decode("utf-8").replace("\n","")
-                h = get_handle(f, file_type)
-                if h:
-                    self.handle = h
-                    self.path = f
-                else:
-                    self.reject = True
-                    self.reject_type = 'invalid'
-
-            elif len(namelist) > 1:
-                # if >1, support decodeme uploades;
-                # otherwise, save4check unless we can find a good genome
-                foundOne = False
-                for f in namelist:
-                    f = os.path.join(tmpdir.name, f)
-                    if os.path.isfile(f):
-                        file_type = subprocess.check_output(["file",f]).decode("utf-8").replace("\n","")
-                        h = get_handle(f, file_type)
-                        if h:
-                            foundOne = True
-                            self.handle = h
-                            self.path = f
-                            if 'deCODEme_' in f or 'genome' in f:
-                                break
-                if not foundOne:
-                    self.reject = True
-                    self.reject_type = 'zip'
-            # cleanup tmpdir if it's rejected
-            if self.reject:
-                tmpdir.cleanup()
-
-        else:
-            ## reject if cannot open.
-            h = get_handle(filename, file_type)
-            if h:
-                self.handle = h
-            else:
-                self.reject = True
-                self.reject_type = 'invalid'
+        self.handle = handle
         
         ## if not rejected, we determine the company and parser upon initialization
-        if not self.reject:
-            if self.handle:
-                self.read_headers()
-            else:
-                # somehow the handle is not set, file is broken
-                self.reject = True
-                self.reject_type = 'invalid'
+        try:
+            self.read_headers()
+        except:
+            raise Exception('Cannot read the file by handle')
+            
 
     def read_headers(self):
         # this will set the company or decide we cannot parse it.
@@ -216,7 +153,6 @@ class DTCparser(object):
         except:
             # exceptions include lines in bytes etc.
             line = ''
-            # print("bad line in file %s" % (self.path=), file=sys.stderr)
 
         if not line:
             self.handle.close()

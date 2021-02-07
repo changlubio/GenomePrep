@@ -27,7 +27,7 @@ from datetime import datetime
 import subprocess
 
 from utils.dtc_parser import reasons, DTCparser
-from utils.tools import get_handle, flip_genotype, check_for_vcf
+from utils.tools import resolve_file_for_genome, flip_genotype
 from utils.snps2vcf import directconvertSNPtoVCFformat
 
 def get_snp_reference(snp, faidx):
@@ -65,21 +65,24 @@ def main():
 
     subprocess.call('mkdir -p {}'.format(args.outdir), shell=True)
 
+    start = time.time()
     status, info = process(args.infile, args.datadir, args.outdir, args.outindex)
 
-    if status != 'Processed':
-        # if isinstance(info, str):
-        # it's rejected
-        print('Your file is not a common genotyping data. Please run other scripts specified in the README.MD to process. (It will be automated soon.)')
+    if status == 'Invalid':
         print('status:\t{}\ninfo:\t{}'.format(status, info))
-    
-    else:
+        
+    elif status == 'Processed':
         print("Please check your {0:} dir for a {1:}.23andme.checked and {1:}.vcf file. \n Here are some stats".format(
             args.outdir, args.outindex))
         for k, i in info.items():
             print('\t'.join(map(str, [k,i])))
-    
-    print("See ya!")
+    else:
+        # if isinstance(info, str):
+        # it's rejected
+        print('status:\t{}\ninfo:\t{}'.format(status, info))
+        print('TO BE SOLVED')
+        
+    print("It took us {} sec to process. See ya!".format(time.time()-start))
 
 def process(infile, datadir, outdir, outindex):
 
@@ -95,20 +98,29 @@ def process(infile, datadir, outdir, outindex):
     status = None
     info = None
 
-    start = time.time()
+    # 1. format parse
+    resolved, handle, iszip = resolve_file_for_genome(infile)
+    if not resolved:
+        status = 'Invalid'
+        if iszip:
+            info = 'Cannot identify genetic data in your upload'
+        else:
+            info = 'Cannot identify genetic data in your uploaded ZIP file'
+        return status, info
+    elif not handle:
+        status = 'error!'
+        info = "Contact clu@mrc-lmb.cam.ac.uk Error is: we found your data but cannot get a handle"
+        return status, info
 
-    dtc_parser = DTCparser(infile)
+    # 2. Now it's a flat file, read it with DTC parser first
+    dtc_parser = DTCparser(handle=handle, filename=infile)
 
     # no need to do anything if we can't parse
     if dtc_parser.reject:
         status = dtc_parser.reject_type
         info = reasons[dtc_parser.reject_type]
-        return status, info
-
-    is_vcf = check_for_vcf(dtc_parser.path)
-    if is_vcf:
-        status = 'vcf'
-        info = 'Processing VCF file'
+        status += '!!error!!'
+        info += '!!error!! should not have seen this'
         return status, info
 
     # read the list, 23andme api, fadix, reversed SNPs
@@ -128,6 +140,7 @@ def process(infile, datadir, outdir, outindex):
     in_rev_strand, rev_in_ref, rev_revd_in_ref, \
     not_in_list, cluster_id, cluster_mcov = dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Orien_1)
 
+
     if reject:
         status = reject_type
         info = {
@@ -138,6 +151,16 @@ def process(infile, datadir, outdir, outindex):
             'cluster_id': cluster_id,
             'cluster_mcov': cluster_mcov
         }
+        if reject_type == 'invalid':
+            if iszip:
+                status = 'Invalid'
+                info = 'Cannot identify a genetic data in your uploaded ZIP file'
+            if count_snps == 0:
+                status = 'Invalid'
+                info = 'It does not look like a genetic data file. Please try again. Alternatively, contact us if you think it should be right!'
+        elif reject_type == 'vcf':
+            status = 'vcf'
+            info = 'Currently this server is not automatically processing VCF files'
         return status, info
     
     ## Accepted
@@ -151,7 +174,7 @@ def process(infile, datadir, outdir, outindex):
     genome_info = genome_info +'\n'.join(dtc_parser.meta_data)
 
     # filter and output as 23andme
-    final_snps = output_as_23andme(store_snps, genome_info, output_23andme_path)
+    afterbadallele = output_as_23andme(store_snps, genome_info, output_23andme_path)
     # output to vcf
     final_snps = directconvertSNPtoVCFformat(store_snps, genome_info, outindex, output_vcf_path)
 
@@ -163,7 +186,8 @@ def process(infile, datadir, outdir, outindex):
         'in_ref': in_ref,
         'cluster_id': cluster_id,
         'cluster_mcov': cluster_mcov,
-        'vcf_snps': final_snps
+        'afterbadallele':afterbadallele,
+        'final_snps': final_snps
     }
     return status, info
 
@@ -176,6 +200,9 @@ def dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Ori
 
     count_snps = 0
     count_not_found_in_ref = 0
+
+    vcflines = 0
+    nonvcflines = 0
     
     # valid_snps: exclude no calls;
     # also make sure that a reference genotype can be found, otherwise it may be from a different build
@@ -192,6 +219,11 @@ def dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Ori
             if record.badsnp:
                 # print("badsnp encountered file %s, line is %s" % (dtc_parser.path, record.line), file=sys.stderr)
                 dtc_parser.total_badsnp += 1
+                # check vcf
+                if len(record.line.split('\t')) > 9:
+                    vcflines += 1
+                else:
+                    nonvcflines += 1
                 continue
             
             ## special treatment for 23andme
@@ -304,6 +336,10 @@ def dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Ori
             cluster_id = cluster_mcov = -1
     else:
         cluster_id = cluster_mcov = not_in_list = -1
+
+    if reject:
+        if vcflines > 5000 and nonvcflines/(vcflines+nonvcflines) < 0.1:
+            reject_type = 'vcf'
     
     return reject, reject_type, store_snps, count_snps, count_not_found_in_ref, \
     valid_snps, in_ref, revd_in_ref, \
