@@ -11,5 +11,5 @@ To facilitate you (and myself) conducting genetic research with public participa
 3. Automatic recognition of chip array version
 4. Supply possibly problematic SNP position filter, stats developed from processing genetic data.
 
-## Webserver
+## Have genetic data? Quick check below
 https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/
