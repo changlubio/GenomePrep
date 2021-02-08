@@ -1,6 +1,5 @@
 # GenomePrep
 To preprocess, quality control and prepare consumer DTC genomes for research
-Official website: 
 
 ## Incentive
 To facilitate you (and myself) conducting genetic research with public participants.
