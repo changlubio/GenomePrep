@@ -20,6 +20,10 @@ def directconvertSNPtoVCFformat(store_snps, vcf_info, vcf_name, out_vcf):
     """
 
     final_snps = 0
+    indels = 0
+    refref = 0
+    multialleic = 0
+
     with open(out_vcf, 'w') as output_handle:
         # Write VCF Header
         print(vcf_info, file=output_handle)
@@ -39,7 +43,8 @@ def directconvertSNPtoVCFformat(store_snps, vcf_info, vcf_name, out_vcf):
                 continue       
 
             if not all([g in valid_call for g in genotypes]):
-                # skip calls that's not A, T, C, G. namely, skip indels   
+                # skip calls that's not A, T, C, G. namely, skip indels
+                indels += 1   
                 continue
 
             ref = snp['ref']
@@ -50,6 +55,7 @@ def directconvertSNPtoVCFformat(store_snps, vcf_info, vcf_name, out_vcf):
                 if ref in set_genotypes:
                     # All calls are reference
                     # we ignore it
+                    refref += 1
                     continue
                 else:
                     # All calls are alternative
@@ -63,6 +69,7 @@ def directconvertSNPtoVCFformat(store_snps, vcf_info, vcf_name, out_vcf):
                 else:
                     # Non of the calls are in the reference,
                     # we ignore them
+                    multialleic += 1
                     continue
         
             calls = []
@@ -80,4 +87,4 @@ def directconvertSNPtoVCFformat(store_snps, vcf_info, vcf_name, out_vcf):
             print("\t".join(fields), file=output_handle)
             final_snps += 1
     
-    return final_snps
+    return final_snps, indels, refref, multialleic

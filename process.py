@@ -27,22 +27,8 @@ from datetime import datetime
 import subprocess
 
 from utils.dtc_parser import reasons, DTCparser
-from utils.tools import resolve_file_for_genome, flip_genotype
+from utils.tools import resolve_file_for_genome, flip_genotype, output_as_23andme, get_snp_reference
 from utils.snps2vcf import directconvertSNPtoVCFformat
-
-def get_snp_reference(snp, faidx):
-    try:
-        chromosome, position = snp.split(':')
-    except:
-        print("Can't parse snp: %s" % snp, file=sys.stderr)
-        return None
-    ## see if we can get the reference
-    try:
-        ref = faidx[chromosome][int(position) - 1].seq
-    except KeyError:
-        print("No reference found for: %s:%s" % (chromosome, position), file=sys.stderr)
-        return None
-    return ref
 
 def read_23andme_api(api_23andme_file):
     ## Read 23andme api into memory
@@ -113,16 +99,19 @@ def process(infile, datadir, outdir, outindex):
         return status, info
 
     # 2. Now it's a flat file, read it with DTC parser first
-    dtc_parser = DTCparser(handle=handle, filename=infile)
+    dtc_parser = DTCparser(handle, filename=infile)
 
-    # no need to do anything if we can't parse
+    # assembly initial checked from file
     if dtc_parser.reject:
-        status = dtc_parser.reject_type
-        info = reasons[dtc_parser.reject_type]
-        status += '!!error!!'
-        info += '!!error!! should not have seen this'
-        return status, info
-
+        if 'grch' in dtc_parser.reject_type:
+            status = 'Invalid'
+            info = 'Build is {} Please use process_assembly to process.'.format(dtc_parser.reject_type)
+            return status, info
+        else:
+            status = 'Invalid'
+            info = 'Error in reading headlines. Please contact us.'
+            return status, info
+    
     # read the list, 23andme api, fadix, reversed SNPs
     with open(list_path, 'rb') as h:
         theLIST_clust = pickle.load(h)
@@ -144,6 +133,7 @@ def process(infile, datadir, outdir, outindex):
     if reject:
         status = reject_type
         info = {
+            'badalleles': dtc_parser.total_badsnp,
             'count_snps': count_snps,
             'count_not_found_in_ref': count_not_found_in_ref,
             'valid_snps': valid_snps,
@@ -176,10 +166,12 @@ def process(infile, datadir, outdir, outindex):
     # filter and output as 23andme
     afterbadallele = output_as_23andme(store_snps, genome_info, output_23andme_path)
     # output to vcf
-    final_snps = directconvertSNPtoVCFformat(store_snps, genome_info, outindex, output_vcf_path)
+    final_snps, indels, refref, multialleic = directconvertSNPtoVCFformat(store_snps, genome_info, outindex, output_vcf_path)
 
     status = 'Processed'
     info = {
+        'badalleles': dtc_parser.total_badsnp,
+        'assembly': dtc_parser.build,
         'count_snps': count_snps,
         'count_not_found_in_ref': count_not_found_in_ref,
         'valid_snps': valid_snps,
@@ -187,6 +179,9 @@ def process(infile, datadir, outdir, outindex):
         'cluster_id': cluster_id,
         'cluster_mcov': cluster_mcov,
         'afterbadallele':afterbadallele,
+        'indels': indels,
+        'refref': refref,
+        'multialleic': multialleic,
         'final_snps': final_snps
     }
     return status, info
@@ -353,18 +348,6 @@ def filter_by_badalleles(store_snps, badalleles):
         if snppos not in badalleles:
             new_snps.append(snp)
     return new_snps
-
-def output_as_23andme(store_snps, genome_info, output_file):
-    # Passsed all checks, apply the correct bad snps filter and output in 23andme format
-
-    final_snps = 0
-    with open(output_file, 'w') as outh:
-        print(genome_info, file=outh)
-        for snp in store_snps:
-            final_snps += 1
-            print('\t'.join([snp['rsid'], snp['chro'], snp['pos'], snp['call']]), file=outh)
-
-    return final_snps
 
 if __name__ == '__main__':
     main()

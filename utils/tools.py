@@ -59,7 +59,6 @@ def resolve_file_for_genome(file_path):
 
     return resolved, handle, iszip
     
-
 def get_handle(file_path, file_type):
     ## get the read stream handle from a single file 
     # accept txt, gzip， bzip2
@@ -100,6 +99,32 @@ def flip_genotype(genotype):
             g = 'C'
         new_genotype += g
     return new_genotype
+
+def output_as_23andme(store_snps, genome_info, output_file):
+    # Passsed all checks, apply the correct bad snps filter and output in 23andme format
+
+    final_snps = 0
+    with open(output_file, 'w') as outh:
+        print(genome_info, file=outh)
+        for snp in store_snps:
+            final_snps += 1
+            print('\t'.join([snp['rsid'], snp['chro'], snp['pos'], snp['call']]), file=outh)
+
+    return final_snps
+
+def get_snp_reference(snp, faidx):
+    try:
+        chromosome, position = snp.split(':')
+    except:
+        print("Can't parse snp: %s" % snp)
+        return None
+    ## see if we can get the reference
+    try:
+        ref = faidx[chromosome][int(position) - 1].seq
+    except KeyError:
+        print("No reference found for: %s:%s" % (chromosome, position))
+        return None
+    return ref
 
 # quick check for vcf, they have at least 10 columns; whereas DTCs have less than 8
 def check_for_vcf(handle):
