@@ -4,10 +4,6 @@
 Takes only 1 file as input and do: 
 1. Quality Check -> reject or continue
 2. Filter Badallele
-
-Need:
-THE_LIST.tab
-api.23andme.com
 '''
 
 MIN_CLUSTER_COVERAGE = 0.8
