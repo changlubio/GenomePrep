@@ -31,7 +31,7 @@ final_snps      159259
 It took us 52.04032802581787 sec to process. See ya!
 '''
 
-# 3. Run non GRCh37 genome
+# 3. Run test genome2 (non GRCh37 build)
 ## We use CrossMapy to convert genome build positions, which requires python 3.7
 ### set up liftover with CrossMap.py 
 ### ref: http://crossmap.sourceforge.net/
