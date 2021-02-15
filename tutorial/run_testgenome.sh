@@ -14,7 +14,7 @@ wget https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/datadir/THE_LIST.dat
 
 ## 2. Run test genome
 ### Assuming you are in the tutorial directory now
-../process.py testgenome.zip -d datadir
+../process.py testgenome.zip -d ./datadir -o ./outputs -i outindex
 
 ### Sample outputs
 '''
@@ -41,7 +41,7 @@ wget http://hgdownload.soe.ucsc.edu/goldenPath/hg18/liftOver/hg18ToHg19.over.cha
 #### Note: default position after installation is /usr/local/bin/CrossMap.py; 
 #### the path needs to be exported; check by running CrossMap.py --version
 
-../process.py testgenome2.zip -d datadir
+../process.py testgenome2.zip -d ./datadir -o ./outputs -i outindex
 ### Sample outputs
 '''
 Please check your ./outputs dir for a outindex.23andme.tohg19 file.
