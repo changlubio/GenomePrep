@@ -4,12 +4,18 @@
 Takes only 1 file as input and do: 
 1. Quality Check -> reject or continue
 2. Filter Badallele
+
+Need:
+THE_LIST.tab
+api.23andme.com
 '''
 
 MIN_CLUSTER_COVERAGE = 0.8
 MIN_COUNT_SNP = 10000
 
 usable_genotypes = set(['A', 'C', 'G', 'T', 'D', 'I'])
+
+refgenomes = {'GRCh37': 'ftp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.toplevel.fa.gz'}
 
 import os
 import sys
@@ -22,9 +28,9 @@ import pyfaidx
 from datetime import datetime
 import subprocess
 
-from utils.dtc_parser import reasons, DTCparser
-from utils.tools import resolve_file_for_genome, flip_genotype, output_as_23andme, get_snp_reference
-from utils.snps2vcf import directconvertSNPtoVCFformat
+from dtc_parser import reasons, DTCparser
+from tools import resolve_file_for_genome, flip_genotype, output_as_23andme, get_snp_reference
+from snps2vcf import directconvertSNPtoVCFformat
 
 def read_23andme_api(api_23andme_file):
     ## Read 23andme api into memory
@@ -42,29 +48,17 @@ def main():
     parser.add_argument('infile')
     parser.add_argument('-d', '--datadir', default='./datadir')
     parser.add_argument('-o', '--outdir', default='./outputs', help='directory where the quality checked 23andMe or VCF format files are going to be written to')
-    parser.add_argument('-i', '--outindex', default='outindex', help='the index/name for the output files, it will also be used as the index in the VCF-format output')
     args = parser.parse_args()
 
     subprocess.call('mkdir -p {}'.format(args.outdir), shell=True)
 
     start = time.time()
-    status, info = process(args.infile, args.datadir, args.outdir, args.outindex)
+    with open(args.infile, 'r') as h:
+        infile_list = [x.rstrip() for x in h.readlines()]
 
-    if status == 'Invalid':
-        print('status:\t{}\ninfo:\t{}'.format(status, info))
-        
-    elif status == 'Processed':
-        print("Please check your {0:} dir for a {1:}.23andme.checked and {1:}.vcf file. \n Here are some stats".format(
-            args.outdir, args.outindex))
-        for k, i in info.items():
-            print('\t'.join(map(str, [k,i])))
-    else:
-        # if isinstance(info, str):
-        # it's rejected
-        print('status:\t{}\ninfo:\t{}'.format(status, info))
-        print('TO BE SOLVED')
-        
-    print("It took us {} sec to process.".format(time.time()-start))
+    for infile in infile_list:
+        status, info = process(infile, args.datadir, args.outdir, os.path.basename(infile))
+        print("{} {}sec done.".format(infile, time.time()-start))
 
 def process(infile, datadir, outdir, outindex):
 
@@ -101,7 +95,7 @@ def process(infile, datadir, outdir, outindex):
     if dtc_parser.reject:
         if 'grch' in dtc_parser.reject_type:
             status = 'Invalid'
-            info = 'Build is {} Please use process_assembly to process.'.format(dtc_parser.reject_type)
+            info = 'Sorry web server only support processing data from human genome assembly GRCh37.'
             return status, info
         else:
             status = 'Invalid'
@@ -120,17 +114,19 @@ def process(infile, datadir, outdir, outindex):
         RS2GRCh37Orien_1 = pickle.load(h)
 
     # read all records
-    reject, reject_type, store_snps, count_snps, count_not_found_in_ref, \
+    reject, reject_type, store_snps, count_snps, duplicate_snps, count_not_found_in_ref, \
     valid_snps, in_ref, revd_in_ref, \
     in_rev_strand, rev_in_ref, rev_revd_in_ref, \
     not_in_list, cluster_id, cluster_mcov = dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Orien_1)
 
+    excl_duplicates = count_snps - len(duplicate_snps)
 
     if reject:
         status = reject_type
         info = {
             'badalleles': dtc_parser.total_badsnp,
             'count_snps': count_snps,
+            'excl_duplicates': excl_duplicates,
             'count_not_found_in_ref': count_not_found_in_ref,
             'valid_snps': valid_snps,
             'in_ref': in_ref,
@@ -156,8 +152,22 @@ def process(infile, datadir, outdir, outindex):
     badalleles = badallelelist[cluster_id]
     store_snps = filter_by_badalleles(store_snps, badalleles)
 
-    genome_info = "##GenomePrep at %s\n##company=%s,usebadallele=%s,maxcov=%s,from_valid_snps=%s\n" % (datetime.now().strftime('%d-%m-%y'), dtc_parser.company, cluster_id, cluster_mcov, valid_snps)
-    genome_info = genome_info +'\n'.join(dtc_parser.meta_data)
+    genome_info = '''##fileformat=VCFv4.2
+##fileDate={0:}
+##source=GenomePrepV1.1(dtc_format={2:},cluseterversion={3:},clustermaxcov={4:},from_valid_snps={5:})
+##reference={1:}
+##phasing=unphased
+##INFO=<ID=INDEL,Number=1,Type=String,Description="Insert or Deletion">
+##INFO=<ID=GAV,Number=.,Type=String,Description="Genotyping Array Version">
+##INFO=<ID=MA,Number=1,Type=String,Description="Genotypes, neither is the same as reference">
+##FILTER=<ID=nref,Description="Neigher of the recorded calls is the same as reference">
+##FILTER=<ID=bz3,Description="Badallele due to Zscore over 3 compared to 1000G">
+##FILTER=<ID=indel,Description="Is INDEL">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'''.format(
+        datetime.now().strftime('%y-%m-%d'),
+        refgenomes['GRCh37'],
+        dtc_parser.company, cluster_id, cluster_mcov, valid_snps
+    )
 
     # filter and output as 23andme
     afterbadallele = output_as_23andme(store_snps, genome_info, output_23andme_path)
@@ -169,6 +179,7 @@ def process(infile, datadir, outdir, outindex):
         'badalleles': dtc_parser.total_badsnp,
         'assembly': dtc_parser.build,
         'count_snps': count_snps,
+        'excl_duplicates': excl_duplicates,
         'count_not_found_in_ref': count_not_found_in_ref,
         'valid_snps': valid_snps,
         'in_ref': in_ref,
@@ -199,6 +210,8 @@ def dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Ori
     # also make sure that a reference genotype can be found, otherwise it may be from a different build
     valid_snps = 0
     store_snps = []
+    snps_seen = set()
+    duplicate_snps = []
     count_genotype_contains_reference = 0
     
     count_not_in_list = 0
@@ -224,29 +237,43 @@ def dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Ori
                 continue
             
             count_snps += 1
+
+            # resolve duplicates
+            snpid = '_'.join([record.chro, record.pos])
+            if snpid in snps_seen:
+                duplicate_snps.append('_'.join([record.chro, record.pos, record.genotype]))
+                continue
+            else:
+                snps_seen.add(snpid)
+
             if len(set(record.genotype).intersection(usable_genotypes)) > 0:
                 ref = get_snp_reference(record.loci, faidx)
 
                 if ref:
                     if len(ref) == 1:
                         valid_snps += 1
-                        store_snps.append({
-                            'rsid': record.rsid,
-                            'chro': record.chro,
-                            'pos': record.pos,
-                            'call': record.genotype,
-                            'ref': ref
-                        })
                         # compare to reference
                         if ref in record.genotype:
                             count_genotype_contains_reference += 1
                         
                         # cluster check
+                        GAV = []
                         if record.loci in theLIST_clust.keys():
                             for clust in theLIST_clust[record.loci]:
                                 cluster_count[clust] += 1
+                                GAV.append(clust)
                         else:
                             count_not_in_list += 1
+                        
+                        store_snps.append({
+                            'rsid': record.rsid,
+                            'chro': record.chro,
+                            'pos': record.pos,
+                            'call': record.genotype,
+                            'ref': ref,
+                            'gav': ','.join(GAV)
+                        })
+
                 else:
                     count_not_found_in_ref += 1
 
@@ -332,7 +359,7 @@ def dtc_read_records(dtc_parser, api_23andme, faidx, theLIST_clust, RS2GRCh37Ori
         if vcflines > 5000 and nonvcflines/(vcflines+nonvcflines) < 0.1:
             reject_type = 'vcf'
     
-    return reject, reject_type, store_snps, count_snps, count_not_found_in_ref, \
+    return reject, reject_type, store_snps, count_snps, duplicate_snps, count_not_found_in_ref, \
     valid_snps, in_ref, revd_in_ref, \
     in_rev_strand, rev_in_ref, rev_revd_in_ref, \
     not_in_list, cluster_id, cluster_mcov
@@ -341,8 +368,11 @@ def filter_by_badalleles(store_snps, badalleles):
     new_snps = []
     for snp in store_snps:
         snppos = ':'.join([snp['chro'], snp['pos']])
-        if snppos not in badalleles:
-            new_snps.append(snp)
+        if snppos in badalleles:
+            snp['ba'] = True
+        else:
+            snp['ba'] = False    
+        new_snps.append(snp)
     return new_snps
 
 if __name__ == '__main__':

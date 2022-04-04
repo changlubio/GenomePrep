@@ -28,7 +28,7 @@ cluster_id      v5
 cluster_mcov    1.0
 afterbadallele  613357
 final_snps      159259
-It took us 52.04032802581787 sec to process. See ya!
+It took us 52.04032802581787 sec to process.
 '''
 
 # 3. Run test genome2 (non GRCh37 build)

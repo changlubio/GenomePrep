@@ -22,8 +22,8 @@ import subprocess
 import tempfile
 import json
 
-from utils.dtc_parser import DTCparser
-from utils.tools import get_snp_reference, flip_genotype, output_as_23andme, resolve_file_for_genome
+from dtc_parser import DTCparser
+from tools import get_snp_reference, flip_genotype, output_as_23andme, resolve_file_for_genome
 from process import process
 
 def main():

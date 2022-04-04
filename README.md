@@ -1,7 +1,8 @@
 # GenomePrep
 To preprocess, quality control and prepare consumer DTC genomes for research
 
-## Official webserver
+## Tutorial
+
 https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/
 
 ## Incentive
