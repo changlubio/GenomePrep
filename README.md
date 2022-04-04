@@ -2,7 +2,9 @@
 To preprocess, quality control and prepare consumer DTC genomes for research
 
 ## Tutorial
+https://genomeprep.readthedocs.io/en/latest/index.html
 
+## Interactive server and bulk downloads
 https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/
 
 ## Incentive
