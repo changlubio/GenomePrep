@@ -1,7 +1,7 @@
 '''
 Run periodically to update the database with new data from OpenSNP.
 
-/Volumes/acasis$ python git/GenomePrep/bin/update_opensnp.py
+/Volumes/acasis$ python git/GenomePrep/bin/opensnp_update.py
 # 2023-09-25
 Total number of entries: 6855
 Distinct users: 6139
@@ -65,7 +65,7 @@ uploads = pd.DataFrame({
     'time': [x['time'] for x in all_files], \
     'download': [x['download'] for x in all_files]
 })
-uploads.to_csv('opensnp_uploads.csv', index=False)
+uploads.to_csv('data/opensnp_uploads.csv', index=False)
 
 # print total number of entries, distinct users, and number entries in last 30 days
 print("Total number of entries: {}".format(len(uploads)))
