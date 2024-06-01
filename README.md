@@ -29,6 +29,7 @@ Download datadir.tar.gz from Zenodo (https://zenodo.org/records/11408421), which
 * RS2GRCh37Orien_1.dat
 * THE_LIST.dat
 
+To download all dependencies, including from public datasets
 ```{bash}
 tar -xvf datadir.tar.gz
 cd datadir
