@@ -18,3 +18,28 @@ The open-source GenomePrep tool-kit, developed on the goodwill of open genome da
 
 ## Publication
 C. Lu, B. Greshake Tzovaras, J. Gough, A survey of direct-to-consumer genotype data,and quality control tool (GenomePrep) for research, Computational and Structural Biotechnology Journal(2021), doi: https://doi.org/10.1016/j.csbj.2021.06.040
+
+# Run GenomePrep locally
+
+## Download 
+
+Download datadir.tar.gz from Zenodo (https://zenodo.org/records/11408421), which contains dependencies for `bin/process.py`:
+* api.23andme.com
+* badalleles.dat
+* RS2GRCh37Orien_1.dat
+* THE_LIST.dat
+
+```{bash}
+tar -xvf datadir.tar.gz
+cd datadir
+wget tp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.toplevel.fa.gz
+gunzip Homo_sapiens.GRCh37.75.dna.toplevel.fa.gz
+wget ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz
+wget http://hgdownload.soe.ucsc.edu/goldenPath/hg18/liftOver/hg18ToHg19.over.chain.gz
+```
+
+## Run GenomePrep on a sample genotype array
+
+```
+bin/process.py tutorial/testgenome.zip -d ./datadir -o ./outputs -i vcfindex
+```
