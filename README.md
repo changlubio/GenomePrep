@@ -5,7 +5,7 @@ To preprocess, quality control and prepare consumer DTC genomes for research
 https://genomeprep.readthedocs.io/en/latest/index.html
 
 ## Interactive server and bulk downloads
-https://supfam.mrc-lmb.cam.ac.uk/GenomePrep/
+https://supfam.org/GenomePrep/
 
 ## Incentive
 The open-source GenomePrep tool-kit, developed on the goodwill of open genome data, addresses the problem of processing raw DTC DNA data in the context of the present: genotype arrays. The output of GenomePrep are DNA datafiles of homogenous formats (23andMe-like or vcf), which enable further research analysis. A single combined data-freeze of genomes that passed checks is also available in official website.
