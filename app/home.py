@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+import os
 
 st.set_page_config(
     page_title="openSNP",
@@ -12,7 +12,9 @@ st.write("# OpenSNP uploads")
 
 # Update data
 from opensnp_update import make_updates
-make_updates()
+# check if file exists
+if not os.path.exists('opensnp_uploads.csv'):
+    make_updates()
 
 # Load data
 uploads = pd.read_csv('opensnp_uploads.csv')
