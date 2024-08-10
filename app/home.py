@@ -29,7 +29,7 @@ uploads['time'] = pd.to_datetime(uploads['time'], format='%d.%m.%Y %H:%M')
 # 10.08.2024 20:35
 
 # print total number of entries, distinct users, and number entries in last 30 days
-st.write(f"Total number of entries: {len(uploads)}. Distinct users: {len(uploads['userID'].unique())}")
+st.write(f"Total number of entries: {len(uploads)}, distinct users: {len(uploads['userID'].unique())}, by {uploads['time'].max().strftime('%Y-%m-%d')}")
 
 # 2 columns
 col1, _, col2 = st.columns([2.5,0.5, 2])
