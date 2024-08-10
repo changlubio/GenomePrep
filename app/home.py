@@ -3,7 +3,7 @@ import pandas as pd
 
 
 st.set_page_config(
-    page_title="open snps",
+    page_title="openSNP",
     page_icon="👋",
     layout="wide"
 )
@@ -16,7 +16,7 @@ st.write("# OpenSNP uploads")
 # make_updates()
 
 # Load data
-uploads = pd.read_csv('data/opensnp_uploads.csv')
+uploads = pd.read_csv('opensnp_uploads.csv')
 # to datetime by specified format
 uploads['time'] = pd.to_datetime(uploads['time'], format='%d.%m.%Y %H:%M')
 # 10.08.2024 20:35
