@@ -6,67 +6,59 @@ Run periodically to update the database with new data from OpenSNP.
 Total number of entries: 6855
 Distinct users: 6139
 '''
-
-import os
-import sys
-import pickle
-import json
-import subprocess
 import pandas as pd
-import numpy as np
 
 import requests
 from lxml import html
 
 url = "https://opensnp.org/genotypes?page={}"
 
-all_files = []
+def make_updates():
 
-# Get table of file information
-req = requests.session()
-for i in range(1, 400):
-    # ignore warnings
-    requests.packages.urllib3.disable_warnings()
-    page = req.get(url.format(i), verify=False)
-    tree = html.fromstring(page.text)
-    
-    # Get file name
-    file_names = [x.lstrip('../data/') for x in tree.xpath("//table[@class='table table-hover']//tr//td[5]/a/@href")]
-    if len(file_names) == 0:
-        break
+    all_files = []
 
-    # Get file ID
-    fileIDs = [x.lstrip() for x in tree.xpath("//table[@class='table table-hover']//td[2]//text()[1]")]
-    
-    # Get time uplodaded
-    times = [x.lstrip() for x in tree.xpath("//table[@class='table table-hover']//td[3]//text()[1]")]
+    # Get table of file information
+    req = requests.session()
+    for i in range(1, 400):
+        # ignore warnings
+        requests.packages.urllib3.disable_warnings()
+        page = req.get(url.format(i), verify=False)
+        tree = html.fromstring(page.text)
+        
+        # Get file name
+        file_names = [x.lstrip('../data/') for x in tree.xpath("//table[@class='table table-hover']//tr//td[5]/a/@href")]
+        if len(file_names) == 0:
+            break
 
-    # Get user ID
-    nicknames = [x.lstrip() for x in tree.xpath("//table[@class='table table-hover']//td[1]//text()[1]") if not '\n' in x]
+        # Get file ID
+        fileIDs = [x.lstrip() for x in tree.xpath("//table[@class='table table-hover']//td[2]//text()[1]")]
+        
+        # Get time uplodaded
+        times = [x.lstrip() for x in tree.xpath("//table[@class='table table-hover']//td[3]//text()[1]")]
 
-    assert (len(file_names) == len(fileIDs) == len(times) == len(nicknames))
+        # Get user ID
+        nicknames = [x.lstrip() for x in tree.xpath("//table[@class='table table-hover']//td[1]//text()[1]") if not '\n' in x]
 
-    for j in range(0, len(file_names)):
-        assert(fileIDs[j] == file_names[j].split('.')[2])
-        all_files.append({
-            'nickname': nicknames[j], \
-            'userID': file_names[j].split('.')[0], \
-            'fileID': fileIDs[j], \
-            'filename': file_names[j], \
-            'time': times[j], \
-            'download': 'https://opensnp.org/data/' + file_names[j]
-        })
+        assert (len(file_names) == len(fileIDs) == len(times) == len(nicknames))
 
-uploads = pd.DataFrame({
-    'nickname': [x['nickname'] for x in all_files], \
-    'userID': [x['userID'] for x in all_files], \
-    'fileID': [x['fileID'] for x in all_files], \
-    'filename': [x['filename'] for x in all_files], \
-    'time': [x['time'] for x in all_files], \
-    'download': [x['download'] for x in all_files]
-})
-uploads.to_csv('data/opensnp_uploads.csv', index=False)
+        for j in range(0, len(file_names)):
+            assert(fileIDs[j] == file_names[j].split('.')[2])
+            all_files.append({
+                'nickname': nicknames[j], \
+                'userID': file_names[j].split('.')[0], \
+                'fileID': fileIDs[j], \
+                'filename': file_names[j], \
+                'time': times[j], \
+                'download': 'https://opensnp.org/data/' + file_names[j]
+            })
 
-# print total number of entries, distinct users, and number entries in last 30 days
-print("Total number of entries: {}".format(len(uploads)))
-print("Distinct users: {}".format(len(uploads['userID'].unique())))
+    uploads = pd.DataFrame({
+        'nickname': [x['nickname'] for x in all_files], \
+        'userID': [x['userID'] for x in all_files], \
+        'fileID': [x['fileID'] for x in all_files], \
+        'filename': [x['filename'] for x in all_files], \
+        'time': [x['time'] for x in all_files], \
+        'download': [x['download'] for x in all_files]
+    })
+    uploads.to_csv('opensnp_uploads.csv', index=False)
+
