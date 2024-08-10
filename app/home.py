@@ -16,6 +16,12 @@ from opensnp_update import make_updates
 if not os.path.exists('opensnp_uploads.csv'):
     make_updates()
 
+# if it't the first day of the month, and the file is older than 20 days, update the data
+if pd.Timestamp.now().day == 1:
+    uploads = pd.read_csv('opensnp_uploads.csv')
+    if pd.Timestamp.now() - pd.Timestamp(uploads['time'].max()) > pd.Timedelta(20, 'D'):
+        make_updates()
+
 # Load data
 uploads = pd.read_csv('opensnp_uploads.csv')
 # to datetime by specified format
