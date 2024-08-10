@@ -10,10 +10,9 @@ st.set_page_config(
 
 st.write("# OpenSNP uploads")
 
-# # Update data
-# from opensnp_update import make_updates
-# from lxml import html
-# make_updates()
+# Update data
+from opensnp_update import make_updates
+make_updates()
 
 # Load data
 uploads = pd.read_csv('opensnp_uploads.csv')
@@ -22,11 +21,10 @@ uploads['time'] = pd.to_datetime(uploads['time'], format='%d.%m.%Y %H:%M')
 # 10.08.2024 20:35
 
 # print total number of entries, distinct users, and number entries in last 30 days
-st.write("Total number of entries: {}".format(len(uploads)))
-st.write("Distinct users: {}".format(len(uploads['userID'].unique())))
+st.write(f"Total number of entries: {len(uploads)}. Distinct users: {len(uploads['userID'].unique())}")
 
 # 2 columns
-col1, col2 = st.columns([3, 2])
+col1, _, col2 = st.columns([2.5,0.5, 2])
 
 with col1:
     # make data frame by year-month, count the number of uploads, sort by index, and count the total number of uploads by year-month
