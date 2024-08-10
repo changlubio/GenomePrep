@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-from opensnp_update import make_updates
-from lxml import html
+
 
 st.set_page_config(
     page_title="open snps",
@@ -11,8 +10,10 @@ st.set_page_config(
 
 st.write("# OpenSNP uploads")
 
-# Update data
-make_updates()
+# # Update data
+# from opensnp_update import make_updates
+# from lxml import html
+# make_updates()
 
 # Load data
 uploads = pd.read_csv('data/opensnp_uploads.csv')

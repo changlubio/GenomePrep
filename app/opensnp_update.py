@@ -62,3 +62,4 @@ def make_updates():
     })
     uploads.to_csv('opensnp_uploads.csv', index=False)
 
+make_updates()
