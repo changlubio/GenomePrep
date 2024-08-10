@@ -45,4 +45,4 @@ wget http://hgdownload.soe.ucsc.edu/goldenPath/hg18/liftOver/hg18ToHg19.over.cha
 bin/process.py tutorial/testgenome.zip -d ./datadir -o ./outputs -i vcfindex
 ```
 
-*We analyzed ~5000 OpenSNP genomes in 2020, the number is growing - see how many there are now here[https://opensnp.streamlit.app/]*
+*We analyzed ~5000 OpenSNP genomes in 2020, the number is growing - see how many there are now [here](https://opensnp.streamlit.app/)*
