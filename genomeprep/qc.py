@@ -22,7 +22,7 @@ def get_snp_reference(loci: str, faidx: pyfaidx.Fasta) -> str | None:
         return None
     try:
         return str(faidx[chro][int(pos_str) - 1].seq)
-    except (KeyError, Exception):
+    except Exception:
         return None
 
 
@@ -80,7 +80,7 @@ def dtc_read_records(
                 continue
 
             # special treatment for 23andme: filter to known loci when api set is provided
-            if dtc_parser.company == "23andme" and api_23andme and record.loci not in api_23andme:
+            if dtc_parser.company == "23andme" and record.loci not in api_23andme:
                 record.badsnp = True
                 dtc_parser.total_badsnp += 1
                 continue
@@ -112,14 +112,8 @@ def dtc_read_records(
                     else:
                         count_not_in_list += 1
 
-                    store_snps.append(SNPRecord(
-                        rsid=record.rsid,
-                        chro=record.chro,
-                        pos=record.pos,
-                        call=record.genotype,
-                        ref=ref,
-                        gav=",".join(gavs),
-                    ))
+                    store_snps.append({"rsid": record.rsid, "chro": record.chro, "pos": record.pos,
+                                       "call": record.genotype, "ref": ref, "gav": ",".join(gavs)})
                 else:
                     count_not_found_in_ref += 1
 
@@ -132,7 +126,6 @@ def dtc_read_records(
         if count_snps < MIN_COUNT_SNP:
             reject = True
             reject_type = "invalid"
-            store_snps = []
 
     # reject if <22 chromosomes or fewer than 10000 valid SNPs
     if not reject:
