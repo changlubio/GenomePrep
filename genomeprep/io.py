@@ -11,8 +11,7 @@ from zipfile import ZipFile
 
 def resolve_file_for_genome(file_path: str) -> tuple[bool, IO[str] | None, bool]:
     """Return (resolved, handle, iszip). The caller is responsible for closing handle."""
-    tmpdir = tempfile.TemporaryDirectory()
-    tempdir = tmpdir.name
+    tempdir = tempfile.mkdtemp()
     resolved = False
     iszip = False
     handle: IO[str] | None = None
@@ -69,7 +68,9 @@ def get_handle(file_path: str, file_type: str) -> IO[str] | None:
 
 
 def check_for_vcf(handle: IO[str] | None) -> bool:
-    """Return True if handle looks like a VCF file (>=10 tab-separated columns, >=5000 data rows)."""
+    """Return True if handle looks like a VCF file (>=10 tab-separated columns, >=5000 data rows).
+
+    Does not close the handle — caller is responsible for closing."""
     if handle is None:
         return False
     vcf_lines = 0
@@ -89,6 +90,5 @@ def check_for_vcf(handle: IO[str] | None) -> bool:
             vcf_lines += 1
         else:
             non_vcf_lines += 1
-    handle.close()
     total = vcf_lines + non_vcf_lines
     return vcf_lines > 5000 and (total == 0 or non_vcf_lines / total < 0.1)
