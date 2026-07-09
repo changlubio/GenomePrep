@@ -27,7 +27,7 @@ def directconvertSNPtoVCFformat(
     out_vcf: str,
 ) -> tuple[int, int, int, int]:
     """Returns (final_snps, indels, refref, multiallelic)."""
-    final_snps = indels = refref = multialleic = 0
+    final_snps = indels = refref = multiallelic = 0
 
     with open(out_vcf, "w") as fh:
         print(vcf_info, file=fh)
@@ -54,7 +54,7 @@ def directconvertSNPtoVCFformat(
                 if ref in gset:
                     alt = (gset - {ref}).pop()
                 else:
-                    multialleic += 1
+                    multiallelic += 1
                     continue
 
             calls = ["0" if g == ref else "1" for g in genotypes]
@@ -62,4 +62,4 @@ def directconvertSNPtoVCFformat(
             print("\t".join(row), file=fh)
             final_snps += 1
 
-    return final_snps, indels, refref, multialleic
+    return final_snps, indels, refref, multiallelic
