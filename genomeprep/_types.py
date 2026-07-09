@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
-from typing import Literal, NotRequired, TypedDict
+from typing import Literal, TypedDict
+
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
 
 Company = Literal["23andme", "ancestrydna", "ftdna", "myheritage", "decodeme", "livingdnacsv", "all"]
 
