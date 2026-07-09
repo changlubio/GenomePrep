@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 
-from genomeprep._types import ProcessResult, SNPRecord
+from genomeprep._types import ProcessResult
 from genomeprep.convert import directconvertSNPtoVCFformat, output_as_23andme
 from genomeprep.data import get_data_dir, load_reference_data
 from genomeprep.io import resolve_file_for_genome
