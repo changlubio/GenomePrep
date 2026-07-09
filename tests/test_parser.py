@@ -150,3 +150,209 @@ class TestDTCrecord:
     def test_goodrsid_false_for_non_rs(self):
         r = DTCrecord("i12345\t1\t100\tAA\n", "23andme")
         assert not r.goodrsid
+
+
+class TestParserAdditional:
+    def test_ancestrydna_3col_line(self):
+        """ancestrydna fallback: 4-part line (rsid chro pos a1) -> a2='_'"""
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1 1 100 A", "ancestrydna")
+        assert record.genotype == "A_"
+        assert not record.badsnp
+
+    def test_ancestrydna_bad_line(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("bad", "ancestrydna")
+        assert record.badsnp
+
+    def test_ancestrydna_chro_mapping(self):
+        """Chromosome remapping: 23->X, 24->Y, 25->X, 26->MT"""
+        from genomeprep.parser import DTCrecord
+
+        for code, expected in [("23", "X"), ("24", "Y"), ("25", "X"), ("26", "MT")]:
+            record = DTCrecord(f"rs1 {code} 100 A C", "ancestrydna")
+            assert record.chro == expected, f"code={code}"
+
+    def test_ftdna_fallback_tab_parsing(self):
+        """ftdna: fallback to tab-separated when comma parse fails"""
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1\t1\t100\tAA", "ftdna")
+        assert record.rsid == "rs1"
+        assert not record.badsnp
+
+    def test_ftdna_bad_rsid(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord('"i123","1","100","AA"', "ftdna")
+        assert record.badsnp
+
+    def test_ftdna_bad_line(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("bad", "ftdna")
+        assert record.badsnp
+
+    def test_myheritage_fallback_tab_parsing(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1\t1\t100\tAA", "myheritage")
+        assert record.rsid == "rs1"
+
+    def test_myheritage_bad_rsid(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord('"i123","1","100","AA"', "myheritage")
+        assert record.badsnp
+
+    def test_myheritage_bad_line(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("bad", "myheritage")
+        assert record.badsnp
+
+    def test_decodeme_minus_strand(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1,var1,1,100,-,AT", "decodeme")
+        # genotype should be flipped
+        assert record.genotype != "AT"  # flip_genotype("AT") applied
+        assert not record.badsnp
+
+    def test_decodeme_chro_M_remapped(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1,var1,M,100,+,AA", "decodeme")
+        assert record.chro == "MT"
+
+    def test_decodeme_bad_line(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("bad", "decodeme")
+        assert record.badsnp
+
+    def test_livingdnacsv_bad_rsid(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("i123 1 100 AA", "livingdnacsv")
+        assert record.badsnp
+
+    def test_livingdnacsv_bad_line(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("bad", "livingdnacsv")
+        assert record.badsnp
+
+    def test_parse_all_comma_separated(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord('"rs1","1","100","AA"', "all")
+        assert record.rsid == "rs1"
+        assert record.chro == "1"
+
+    def test_parse_all_5col(self):
+        """all: 5-col space (rsid chro pos a1 a2)"""
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1 1 100 A A", "all")
+        assert record.genotype == "AA"
+
+    def test_parse_all_decodeme_format(self):
+        """all: 6-col comma with strand"""
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1,var1,1,100,+,AA", "all")
+        assert record.rsid == "rs1"
+
+    def test_parse_all_chro_M_remapped(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1 M 100 AA", "all")
+        assert record.chro == "MT"
+
+    def test_parse_all_chro_23_remapped(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("rs1 23 100 AA", "all")
+        assert record.chro == "X"
+
+    def test_parse_all_bad_line(self):
+        from genomeprep.parser import DTCrecord
+
+        record = DTCrecord("bad", "all")
+        assert record.badsnp
+
+    def test_parser_unicode_error_in_read_headers(self):
+        """UnicodeDecodeError during header read should set reject=True."""
+        from genomeprep.parser import DTCparser
+
+        class BadHandle:
+            def readline(self):
+                raise UnicodeDecodeError("utf-8", b"", 0, 1, "bad")
+
+            def close(self):
+                pass
+
+        parser = DTCparser(BadHandle())
+        assert parser.reject
+        assert parser.reject_type == "invalid"
+
+    def test_parser_exception_in_next_readline(self):
+        """Exception in __next__ readline should use empty string fallback (stop iteration)."""
+        from genomeprep.parser import DTCparser
+
+        class BadNextHandle:
+            _called = False
+
+            def readline(self):
+                if not self._called:
+                    self._called = True
+                    return "unknown header\n"
+                raise OSError("read error")
+
+            def close(self):
+                pass
+
+        parser = DTCparser(BadNextHandle())
+        # Should handle exception gracefully (returns "" -> StopIteration)
+        records = list(parser)
+        assert len(records) == 0
+
+    def test_parser_detects_decodeme(self):
+        """Parser detects decodeme company from header."""
+        from genomeprep.parser import DTCparser
+
+        content = "Name,Variation,Chromosome,Position,Strand,YourCode\nrs1,var1,1,100,+,AA\n"
+        parser = DTCparser(io.StringIO(content))
+        assert parser.company == "decodeme"
+        assert not parser.reject
+
+    def test_parser_detects_livingdnacsv(self):
+        """Parser detects livingdnacsv company from header."""
+        from genomeprep.parser import DTCparser
+
+        content = "Living DNA customer genotype data download file\nrs1 1 100 AA\n"
+        parser = DTCparser(io.StringIO(content))
+        assert parser.company == "livingdnacsv"
+        assert not parser.reject
+
+    def test_parser_grch36_detection(self):
+        """ancestrydna grch36 detection."""
+        from genomeprep.parser import DTCparser
+
+        content = "#AncestryDNA raw data download\n# build 36\nrs1\t1\t100\tA\tA\n"
+        parser = DTCparser(io.StringIO(content))
+        assert parser.reject
+        assert parser.reject_type == "grch36"
+
+    def test_parser_counts_badsnp(self):
+        """Parser increments total_badsnp for norsid records."""
+        from genomeprep.parser import DTCparser
+
+        content = "# generated by 23andMe\ni99999\t1\t100\tAA\n"
+        p = DTCparser(io.StringIO(content))
+        records = list(p)
+        assert len(records) == 1
+        assert records[0].goodrsid is False
