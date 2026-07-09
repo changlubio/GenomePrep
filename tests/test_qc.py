@@ -155,21 +155,29 @@ class TestDtcReadRecordsExtended:
         assert reject_type == "incomplete"
 
     def test_the_list_cluster_counting(self):
-        """SNPs in the_list should be stored with gav field."""
+        """SNPs in the_list should populate the gav field."""
         from genomeprep.parser import DTCparser
         from genomeprep.qc import dtc_read_records
 
         mock_faidx = MagicMock()
         mock_faidx.__getitem__.return_value.__getitem__.return_value.seq = "A"
 
-        content = "unknown header\nrs1\t1\t100\tAA\n"
+        # Build 15000+ SNPs across 22 chromosomes to clear all reject checks
+        lines = ["unknown header"]
+        chroms = [str(i) for i in range(1, 23)]  # 1..22
+        for i in range(15000):
+            chro = chroms[i % len(chroms)]
+            lines.append(f"rs{i}\t{chro}\t{i + 1}\tAA")
+        content = "\n".join(lines) + "\n"
         parser = DTCparser(io.StringIO(content))
-        # Loci 1:100 is in the_list
-        the_list = {"1:100": ["cluster1"]}
+        the_list = {"1:1": ["cluster1"]}
 
-        _, _, store_snps, *_ = dtc_read_records(parser, set(), mock_faidx, the_list, {})
-        if store_snps:  # may not exist if count < min, but the_list path was exercised
-            assert "cluster1" in store_snps[0]["gav"] or True  # path was hit
+        reject, _, store_snps, *_ = dtc_read_records(parser, set(), mock_faidx, the_list, {})
+        # Depending on in_ref check, test may still reject — but we want to verify
+        # the the_list path was hit: at least the snp at 1:1 should have gav="cluster1"
+        matching = [s for s in store_snps if s["chro"] == "1" and s["pos"] == "1"]
+        assert matching, "Expected at least one SNP at chro=1 pos=1"
+        assert matching[0]["gav"] == "cluster1"
 
     def test_duplicate_snps_are_skipped(self):
         """Duplicate loci should be added to duplicate_snps list but not counted twice."""
@@ -202,5 +210,5 @@ class TestDtcReadRecordsExtended:
         _, _, _, _, _, count_not_found_in_ref, *_ = dtc_read_records(
             parser, set(), mock_faidx, {}, {}
         )
-        # We can't easily assert exact value but the path was exercised
-        assert count_not_found_in_ref >= 0
+        # Verify the path that increments the counter was actually hit
+        assert count_not_found_in_ref >= 1
