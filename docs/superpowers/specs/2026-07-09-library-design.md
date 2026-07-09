@@ -91,7 +91,7 @@ class SNPRecord(TypedDict):
     call: str
     ref: str
     gav: str
-    ba: bool  # populated by filter_by_badalleles
+    ba: NotRequired[bool]  # set by filter_by_badalleles; absent before filtering
 
 @dataclass
 class ProcessResult:
