@@ -49,26 +49,44 @@ def directconvertSNPtoVCFformat(
             genotypes = list(snp["call"])
             if not (1 <= len(genotypes) <= 2):
                 continue
-            if not all(g in _VALID_CALL for g in genotypes):
-                indels += 1
-                continue
 
             ref = snp["ref"]
             gset = set(genotypes)
 
-            if len(gset) == 1:
-                if ref in gset:
-                    refref += 1
-                    continue
-                alt = genotypes[0]
-            else:
-                if ref in gset:
-                    alt = (gset - {ref}).pop()
-                else:
-                    multiallelic += 1
-                    continue
+            # INFO: GAV
+            info_parts: list[str] = []
+            info_parts.append("GAV=none" if snp["gav"] == "" else f"GAV={snp['gav']}")
 
-            calls = ["0" if g == ref else "1" for g in genotypes]
+            # FILTER: badallele
+            filter_parts: list[str] = []
+            if snp.get("ba", False):
+                filter_parts.append("bz3")
+
+            if not all(g in _VALID_CALL for g in gset):
+                # INDEL: emit with INDEL tag
+                indels += 1
+                alt = "."
+                info_parts.append(f"INDEL={snp['call']}")
+                filter_parts.append("indel")
+            else:
+                if len(gset) == 1:
+                    if ref in gset:
+                        # refref: emit with alt="."
+                        refref += 1
+                        alt = "."
+                    else:
+                        alt = genotypes[0]
+                else:
+                    if ref in gset:
+                        alt = (gset - {ref}).pop()
+                    else:
+                        # multiallelic: skip
+                        multiallelic += 1
+                        continue
+
+            calls = sorted("0" if g == ref else "1" for g in genotypes)
+            filter_str = ";".join(filter_parts) if filter_parts else "PASS"
+            info_str = ";".join(info_parts)
             row = [
                 snp["chro"],
                 snp["pos"],
@@ -76,10 +94,10 @@ def directconvertSNPtoVCFformat(
                 ref,
                 alt,
                 ".",
-                ".",
-                ".",
+                filter_str,
+                info_str,
                 "GT",
-                "|".join(calls),
+                "/".join(calls),
             ]
             print("\t".join(row), file=fh)
             final_snps += 1

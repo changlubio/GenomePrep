@@ -47,5 +47,5 @@ module = "pyfaidx"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
+addopts = "--cov=genomeprep --cov-fail-under=80"
 testpaths = ["tests"]
-addopts = "--tb=short"

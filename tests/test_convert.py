@@ -10,7 +10,7 @@ def _snp(
     ref: str = "A",
     gav: str = "",
 ) -> SNPRecord:
-    return SNPRecord(rsid=rsid, chro=chro, pos=pos, call=call, ref=ref, gav=gav)
+    return SNPRecord(rsid=rsid, chro=chro, pos=pos, call=call, ref=ref, gav=gav, ba=False)
 
 
 class TestFlipGenotype:
@@ -57,22 +57,50 @@ class TestDirectConvertSNPtoVCF:
         assert multi == 0
         content = open(out).read()
         assert "rs1" in content
-        assert "0|1" in content or "1|0" in content
+        assert "0/1" in content or "1/0" in content
+        assert "GAV=none" in content
+        assert "PASS" in content
 
-    def test_skips_indels(self, tmp_path):
-        snps: list[SNPRecord] = [
-            _snp(call="ID", ref="A"),
-        ]
+    def test_emits_indels_with_tag(self, tmp_path):
+        snps: list[SNPRecord] = [_snp(call="ID", ref="A")]
         out = str(tmp_path / "out.vcf")
         final, indels, refref, multi = directconvertSNPtoVCFformat(snps, "##header", "s", out)
-        assert final == 0
+        assert final == 1  # indels ARE emitted
         assert indels == 1
+        content = open(out).read()
+        assert "INDEL=ID" in content
+        assert "indel" in content
 
-    def test_skips_ref_ref(self, tmp_path):
-        snps: list[SNPRecord] = [
-            _snp(call="AA", ref="A"),
-        ]
+    def test_emits_refref_with_dot_alt(self, tmp_path):
+        snps: list[SNPRecord] = [_snp(call="AA", ref="A")]
         out = str(tmp_path / "out.vcf")
         final, indels, refref, multi = directconvertSNPtoVCFformat(snps, "##header", "s", out)
-        assert final == 0
+        assert final == 1  # refref IS emitted
         assert refref == 1
+        content = open(out).read()
+        assert "\t.\t" in content  # alt is "."
+
+    def test_badallele_adds_bz3_filter(self, tmp_path):
+        snp = _snp(call="AG", ref="A")
+        snp["ba"] = True
+        out = str(tmp_path / "out.vcf")
+        final, indels, refref, multi = directconvertSNPtoVCFformat([snp], "##header", "s", out)
+        assert final == 1
+        content = open(out).read()
+        assert "bz3" in content
+
+    def test_gav_annotation_in_info(self, tmp_path):
+        snp_with_gav = _snp(call="AG", ref="A", gav="cluster1")
+        snp_no_gav = _snp(rsid="rs2", pos="200", call="AG", ref="A", gav="")
+        out = str(tmp_path / "out.vcf")
+        directconvertSNPtoVCFformat([snp_with_gav, snp_no_gav], "##header", "s", out)
+        content = open(out).read()
+        assert "GAV=cluster1" in content
+        assert "GAV=none" in content
+
+    def test_gt_separator_is_slash(self, tmp_path):
+        snp = _snp(call="AG", ref="A")
+        out = str(tmp_path / "out.vcf")
+        directconvertSNPtoVCFformat([snp], "##header", "s", out)
+        content = open(out).read()
+        assert "0/1" in content or "1/0" in content
