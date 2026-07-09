@@ -31,7 +31,18 @@ def directconvertSNPtoVCFformat(
 
     with open(out_vcf, "w") as fh:
         print(vcf_info, file=fh)
-        fields_header = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", vcf_name]
+        fields_header = [
+            "CHROM",
+            "POS",
+            "ID",
+            "REF",
+            "ALT",
+            "QUAL",
+            "FILTER",
+            "INFO",
+            "FORMAT",
+            vcf_name,
+        ]
         print("#" + "\t".join(fields_header), file=fh)
 
         for snp in store_snps:
@@ -58,7 +69,18 @@ def directconvertSNPtoVCFformat(
                     continue
 
             calls = ["0" if g == ref else "1" for g in genotypes]
-            row = [snp["chro"], snp["pos"], snp["rsid"], ref, alt, ".", ".", ".", "GT", "|".join(calls)]
+            row = [
+                snp["chro"],
+                snp["pos"],
+                snp["rsid"],
+                ref,
+                alt,
+                ".",
+                ".",
+                ".",
+                "GT",
+                "|".join(calls),
+            ]
             print("\t".join(row), file=fh)
             final_snps += 1
 

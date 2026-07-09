@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import os
 import pickle
-import tempfile
-from unittest.mock import MagicMock, patch
+
 import pytest
 
-from genomeprep.data import get_data_dir, ReferenceData
+from genomeprep.data import ReferenceData, get_data_dir
 
 
 class TestGetDataDir:
@@ -35,6 +33,7 @@ class TestGetDataDir:
 class TestReferenceDataFields:
     def test_dataclass_has_expected_fields(self):
         import dataclasses
+
         fields = {f.name for f in dataclasses.fields(ReferenceData)}
         assert fields == {"api_23andme", "the_list", "reverse_snps", "bad_allele_clusters", "faidx"}
 
@@ -42,11 +41,13 @@ class TestReferenceDataFields:
 class TestLoadReferenceData:
     def test_raises_file_not_found_for_missing_the_list(self, tmp_path):
         from genomeprep.data import load_reference_data
+
         with pytest.raises(FileNotFoundError, match="THE_LIST.dat"):
             load_reference_data(str(tmp_path))
 
     def test_raises_file_not_found_for_missing_fasta(self, tmp_path):
         from genomeprep.data import load_reference_data
+
         # Create all non-FASTA files so error points to FASTA
         for fname in ["THE_LIST.dat", "badalleles.dat", "RS2GRCh37Orien_1.dat"]:
             with open(tmp_path / fname, "wb") as fh:

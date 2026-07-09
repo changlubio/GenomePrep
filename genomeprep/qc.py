@@ -8,6 +8,7 @@ from genomeprep.convert import flip_genotype
 
 if TYPE_CHECKING:
     import pyfaidx
+
     from genomeprep.parser import DTCparser
 
 MIN_CLUSTER_COVERAGE: float = 0.8
@@ -38,7 +39,23 @@ def dtc_read_records(
     faidx: pyfaidx.Fasta,
     the_list: dict[str, list[str]],
     reverse_snps: dict[str, Any],
-) -> tuple[bool, str, list[SNPRecord], int, list[str], int, int, float, float, int, float, float, float, str | int, float | int]:
+) -> tuple[
+    bool,
+    str,
+    list[SNPRecord],
+    int,
+    list[str],
+    int,
+    int,
+    float,
+    float,
+    int,
+    float,
+    float,
+    float,
+    str | int,
+    float | int,
+]:
     """
     Read all records from a DTCparser and perform quality checks.
 
@@ -58,7 +75,8 @@ def dtc_read_records(
     non_vcf_lines = 0
 
     # valid_snps: exclude no calls;
-    # also make sure that a reference genotype can be found, otherwise it may be from a different build
+    # also make sure that a reference genotype can be found,
+    # otherwise it may be from a different build
     valid_snps = 0
     store_snps: list[SNPRecord] = []
     snps_seen: set[str] = set()
@@ -112,8 +130,16 @@ def dtc_read_records(
                     else:
                         count_not_in_list += 1
 
-                    store_snps.append({"rsid": record.rsid, "chro": record.chro, "pos": record.pos,
-                                       "call": record.genotype, "ref": ref, "gav": ",".join(gavs)})
+                    store_snps.append(
+                        {
+                            "rsid": record.rsid,
+                            "chro": record.chro,
+                            "pos": record.pos,
+                            "call": record.genotype,
+                            "ref": ref,
+                            "gav": ",".join(gavs),
+                        }
+                    )
                 else:
                     count_not_found_in_ref += 1
 
@@ -201,8 +227,19 @@ def dtc_read_records(
             reject_type = "vcf"
 
     return (
-        reject, reject_type, store_snps, count_snps, duplicate_snps,
-        count_not_found_in_ref, valid_snps, in_ref, revd_in_ref,
-        in_rev_strand, rev_in_ref, rev_revd_in_ref, not_in_list,
-        cluster_id, cluster_mcov,
+        reject,
+        reject_type,
+        store_snps,
+        count_snps,
+        duplicate_snps,
+        count_not_found_in_ref,
+        valid_snps,
+        in_ref,
+        revd_in_ref,
+        in_rev_strand,
+        rev_in_ref,
+        rev_revd_in_ref,
+        not_in_list,
+        cluster_id,
+        cluster_mcov,
     )

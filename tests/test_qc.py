@@ -2,14 +2,25 @@ from __future__ import annotations
 
 import io
 from unittest.mock import MagicMock
-import pytest
 
-from genomeprep.qc import filter_by_badalleles, get_snp_reference, MIN_CLUSTER_COVERAGE, MIN_COUNT_SNP
 from genomeprep._types import SNPRecord
+from genomeprep.qc import (
+    MIN_CLUSTER_COVERAGE,
+    MIN_COUNT_SNP,
+    filter_by_badalleles,
+    get_snp_reference,
+)
 
 
 def _snp(**kwargs: str) -> SNPRecord:
-    base: SNPRecord = {"rsid": "rs1", "chro": "1", "pos": "100", "call": "AA", "ref": "A", "gav": ""}
+    base: SNPRecord = {
+        "rsid": "rs1",
+        "chro": "1",
+        "pos": "100",
+        "call": "AA",
+        "ref": "A",
+        "gav": "",
+    }
     base.update(kwargs)  # type: ignore[typeddict-item]
     return base
 
@@ -56,19 +67,19 @@ class TestDtcReadRecords:
     def test_rejects_when_fewer_than_min_count_snp(self):
         from genomeprep.parser import DTCparser
         from genomeprep.qc import dtc_read_records
+
         mock_faidx = MagicMock()
         mock_faidx.__getitem__.return_value.__getitem__.return_value.seq = "A"
         content = "unknown header\nrs1\t1\t100\tAA\n"
         parser = DTCparser(io.StringIO(content))
-        reject, reject_type, store_snps, *_ = dtc_read_records(
-            parser, set(), mock_faidx, {}, {}
-        )
+        reject, reject_type, store_snps, *_ = dtc_read_records(parser, set(), mock_faidx, {}, {})
         assert reject
         assert reject_type == "invalid"
 
     def test_counts_duplicates(self):
         from genomeprep.parser import DTCparser
         from genomeprep.qc import dtc_read_records
+
         mock_faidx = MagicMock()
         mock_faidx.__getitem__.return_value.__getitem__.return_value.seq = "A"
         # Two lines with same position = one duplicate

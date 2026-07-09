@@ -1,10 +1,11 @@
+import gzip
 import io
 import os
-import gzip
 import zipfile
-import tempfile
+
 import pytest
-from genomeprep.io import resolve_file_for_genome, check_for_vcf
+
+from genomeprep.io import check_for_vcf, resolve_file_for_genome
 
 TUTORIAL = os.path.join(os.path.dirname(__file__), "..", "tutorial")
 

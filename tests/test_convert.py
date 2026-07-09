@@ -1,12 +1,15 @@
-import os
-import tempfile
-import pytest
-from genomeprep.convert import flip_genotype, output_as_23andme, directconvertSNPtoVCFformat
 from genomeprep._types import SNPRecord
+from genomeprep.convert import directconvertSNPtoVCFformat, flip_genotype, output_as_23andme
 
 
-def _snp(rsid: str = "rs1", chro: str = "1", pos: str = "100",
-         call: str = "AG", ref: str = "A", gav: str = "") -> SNPRecord:
+def _snp(
+    rsid: str = "rs1",
+    chro: str = "1",
+    pos: str = "100",
+    call: str = "AG",
+    ref: str = "A",
+    gav: str = "",
+) -> SNPRecord:
     return SNPRecord(rsid=rsid, chro=chro, pos=pos, call=call, ref=ref, gav=gav)
 
 

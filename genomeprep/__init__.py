@@ -13,7 +13,9 @@ from genomeprep.qc import dtc_read_records, filter_by_badalleles
 __version__ = "1.2.0"
 __all__ = ["process", "DTCparser", "DTCrecord", "ProcessResult", "__version__"]
 
-_REF_GENOMES = {"GRCh37": "ftp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.toplevel.fa.gz"}
+_REF_GENOMES = {
+    "GRCh37": "ftp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.toplevel.fa.gz"
+}
 
 
 def process(
@@ -29,7 +31,11 @@ def process(
 
     resolved, handle, iszip = resolve_file_for_genome(infile)
     if not resolved:
-        msg = "Cannot identify genetic data in your uploaded ZIP file" if iszip else "Cannot identify genetic data in your upload"
+        msg = (
+            "Cannot identify genetic data in your uploaded ZIP file"
+            if iszip
+            else "Cannot identify genetic data in your upload"
+        )
         return ProcessResult(status="Invalid", info=msg)
     if handle is None:
         return ProcessResult(status="error", info="Contact us — data found but handle unavailable")
@@ -43,12 +49,23 @@ def process(
     resolved_datadir = get_data_dir(datadir)
     ref = load_reference_data(resolved_datadir)
 
-    (reject, reject_type, store_snps, count_snps, duplicate_snps,
-     count_not_found_in_ref, valid_snps, in_ref, revd_in_ref,
-     in_rev_strand, rev_in_ref, rev_revd_in_ref, not_in_list,
-     cluster_id, cluster_mcov) = dtc_read_records(
-        parser, ref.api_23andme, ref.faidx, ref.the_list, ref.reverse_snps
-    )
+    (
+        reject,
+        reject_type,
+        store_snps,
+        count_snps,
+        duplicate_snps,
+        count_not_found_in_ref,
+        valid_snps,
+        in_ref,
+        revd_in_ref,
+        in_rev_strand,
+        rev_in_ref,
+        rev_revd_in_ref,
+        not_in_list,
+        cluster_id,
+        cluster_mcov,
+    ) = dtc_read_records(parser, ref.api_23andme, ref.faidx, ref.the_list, ref.reverse_snps)
 
     excl_duplicates = count_snps - len(duplicate_snps)
 
@@ -61,7 +78,9 @@ def process(
             "valid_snps": valid_snps,
             "in_ref": in_ref,
             "cluster_id": cluster_id if isinstance(cluster_id, str) else str(cluster_id),
-            "cluster_mcov": cluster_mcov if isinstance(cluster_mcov, float) else float(cluster_mcov),
+            "cluster_mcov": cluster_mcov
+            if isinstance(cluster_mcov, float)
+            else float(cluster_mcov),
         }
         if reject_type == "vcf":
             return ProcessResult(status="vcf", info="VCF files are not processed by this server.")
@@ -81,8 +100,8 @@ def process(
         f"clustermaxcov={cluster_mcov},from_valid_snps={valid_snps})\n"
         f"##reference={_REF_GENOMES['GRCh37']}\n"
         "##phasing=unphased\n"
-        "##INFO=<ID=INDEL,Number=1,Type=String,Description=\"Insert or Deletion\">\n"
-        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">"
+        '##INFO=<ID=INDEL,Number=1,Type=String,Description="Insert or Deletion">\n'
+        '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'
     )
 
     afterbadallele = output_as_23andme(store_snps, genome_info, output_23andme)
@@ -101,7 +120,9 @@ def process(
             "valid_snps": valid_snps,
             "in_ref": in_ref,
             "cluster_id": cluster_id if isinstance(cluster_id, str) else str(cluster_id),
-            "cluster_mcov": cluster_mcov if isinstance(cluster_mcov, float) else float(cluster_mcov),
+            "cluster_mcov": cluster_mcov
+            if isinstance(cluster_mcov, float)
+            else float(cluster_mcov),
             "afterbadallele": afterbadallele,
             "indels": indels,
             "refref": refref,

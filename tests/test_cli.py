@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import pytest
 
 
 def run_cli(*args: str) -> subprocess.CompletedProcess[str]:

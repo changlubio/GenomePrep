@@ -59,9 +59,7 @@ def download(dest: str | None = None, base_url: str | None = None) -> str:
         else:
             print(f"Already present: {filename}")
     print(f"Reference data in: {target}")
-    print(
-        f"Note: {_FASTA_FILENAME} (~3 GB) must be supplied manually. See README."
-    )
+    print(f"Note: {_FASTA_FILENAME} (~3 GB) must be supplied manually. See README.")
     return target
 
 

@@ -9,11 +9,21 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import NotRequired
 
-Company = Literal["23andme", "ancestrydna", "ftdna", "myheritage", "decodeme", "livingdnacsv", "all"]
+Company = Literal[
+    "23andme", "ancestrydna", "ftdna", "myheritage", "decodeme", "livingdnacsv", "all"
+]
 
 RejectType = Literal[
-    "invalid", "small", "incomplete", "grch36", "grch38",
-    "notgrch37", "vcf", "zip", "ref", "imputation",
+    "invalid",
+    "small",
+    "incomplete",
+    "grch36",
+    "grch38",
+    "notgrch37",
+    "vcf",
+    "zip",
+    "ref",
+    "imputation",
 ]
 
 

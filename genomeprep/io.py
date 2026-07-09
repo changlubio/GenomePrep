@@ -30,7 +30,7 @@ def resolve_file_for_genome(file_path: str) -> tuple[bool, IO[str] | None, bool]
         except Exception:
             namelist = []
 
-        candidates = sorted(namelist, key=lambda n: ("deCODEme_" in n or "genome" in n), reverse=True)
+        candidates = sorted(namelist, key=lambda n: "deCODEme_" in n or "genome" in n, reverse=True)
         for name in candidates:
             f = os.path.join(tempdir, name)
             if not os.path.isfile(f):
@@ -57,12 +57,12 @@ def get_handle(file_path: str, file_type: str) -> IO[str] | None:
     """Open a file for text reading; supports plain text, gzip, and bzip2."""
     try:
         if "ASCII text" in file_type or "RSID sidtune PlaySID compatible" in file_type:
-            return open(file_path, "r")
+            return open(file_path)
         if "gzip" in file_type:
             return gzip.open(file_path, "rt")
         if "bzip" in file_type:
             return bz2.open(file_path, "rt")
-        return open(file_path, "r")
+        return open(file_path)
     except Exception:
         return None
 

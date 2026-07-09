@@ -1,23 +1,62 @@
 from __future__ import annotations
 
-from typing import IO, Iterator
+from collections.abc import Iterator
+from typing import IO
 
-from genomeprep._types import Company, RejectType
+from genomeprep._types import Company
 from genomeprep.convert import flip_genotype
 
 valid_call: frozenset[str] = frozenset({"A", "C", "G", "T", "I", "D", "_", "-", "0"})
 valid_chromo: frozenset[str] = frozenset(
-    {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
-     "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y", "MT"}
+    {
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "X",
+        "Y",
+        "MT",
+    }
 )
-COMPANY: list[str] = ["23andme", "ancestrydna", "ftdna", "myheritage", "decodeme", "livingdnacsv", "all"]
+COMPANY: list[str] = [
+    "23andme",
+    "ancestrydna",
+    "ftdna",
+    "myheritage",
+    "decodeme",
+    "livingdnacsv",
+    "all",
+]
 reasons: dict[str, str] = {
-    "invalid": "We are unable to properly process your upload. Please check your file and try again.",
+    "invalid": (
+        "We are unable to properly process your upload. Please check your file and try again."
+    ),
     "small": "Your genome is too small (<10000 lines).",
-    "incomplete": "Your genome is incomplete. We only process complete genomes where all chromosomes are sequenced.",
+    "incomplete": (
+        "Your genome is incomplete. We only process complete genomes "
+        "where all chromosomes are sequenced."
+    ),
     "grch36": "Your DNA file is generated using human genome assembly GRCh36. ",
     "grch38": "Your DNA file is generated using human genome assembly GRCh38.",
-    "notgrch37": "save4check Your DNA file contains positions not from assembly GRCh37.",
+    "notgrch37": ("save4check Your DNA file contains positions not from assembly GRCh37."),
     "vcf": "save4check This could be because it is an vcf file.",
     "zip": "save4check This could be because it is compressed/zipped.",
     "ref": "save4check This could be because it has unspecified reverse strand SNPs.",
@@ -193,7 +232,9 @@ class DTCrecord:
 
     def _parse_decodeme(self) -> None:
         try:
-            self.rsid, _var, self.chro, self.pos, strand, genotype = self.line.replace(" ", "").split(",")
+            self.rsid, _var, self.chro, self.pos, strand, genotype = self.line.replace(
+                " ", ""
+            ).split(",")
         except ValueError:
             self.badsnp = True
             return
@@ -219,7 +260,9 @@ class DTCrecord:
                 self.rsid, self.chro, self.pos, a1, a2 = self.line.rstrip().split()
             except ValueError:
                 try:
-                    self.rsid, self.chro, self.pos, self.genotype = self.line.replace('"', "").split(",")
+                    self.rsid, self.chro, self.pos, self.genotype = self.line.replace(
+                        '"', ""
+                    ).split(",")
                 except ValueError:
                     try:
                         self.rsid, _var, self.chro, self.pos, strand, self.genotype = (

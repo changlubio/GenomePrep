@@ -6,6 +6,7 @@ import sys
 
 def _process_cmd(args: argparse.Namespace) -> int:
     import os
+
     from genomeprep import process
 
     if not os.path.exists(args.infile):
@@ -53,7 +54,9 @@ def main() -> None:
     p_proc.add_argument("-i", "--outindex", default="outindex", help="Output file index/name")
 
     p_dl = sub.add_parser("download-data", help="Download reference data files.")
-    p_dl.add_argument("--dest", default=None, help="Destination directory (default: ~/.cache/genomeprep)")
+    p_dl.add_argument(
+        "--dest", default=None, help="Destination directory (default: ~/.cache/genomeprep)"
+    )
 
     args = parser.parse_args()
 
